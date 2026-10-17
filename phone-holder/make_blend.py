@@ -2,7 +2,7 @@
 """Build phone-holder/s23ultra_holder.blend (v3 swivel, tough edition) with Blender's bpy module.
 
     pip install bpy manifold3d numpy
-    python3 make_blend.py [--rail 10] [--radius 500] [--case 0] [--clear 0] [--fastener printed|screw]
+    python3 make_blend.py [--rail 10] [--radius 500] [--case 4 | --case-dims W H T] [--clear 0] [--fastener printed|screw]
 
 Scene units are millimetres (1 Blender unit = 1 mm).
   Swivel_clip      printable clip (rail top = Z 0, user / laptop on the -Y side)
@@ -49,12 +49,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rail", type=float, default=10.0)
     ap.add_argument("--radius", type=float, default=500.0)
-    ap.add_argument("--case", type=float, default=0.0)
+    ap.add_argument("--case", type=float, default=4.0, help="extra mm for a phone case (width, height, thickness)")
+    ap.add_argument("--case-dims", type=float, nargs=3, metavar=("W", "H", "T"), help="measured phone + case size in mm")
     ap.add_argument("--clear", type=float, default=0.0)
     ap.add_argument("--tilt", type=float, default=15.0)
     ap.add_argument("--fastener", choices=("printed", "screw"), default="printed")
     ap.add_argument("--render", action="store_true", help="also write images/blender_preview.png (needs EGL/GPU libs)")
     a = ap.parse_args()
+    if a.case_dims:
+        a.case = (a.case_dims[0] - 78.1, a.case_dims[1] - 163.4, a.case_dims[2] - 8.9)
 
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene

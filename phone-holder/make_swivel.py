@@ -7,7 +7,7 @@ Parts (all printable):
   knob    (printed-fastener version only) coin-slot knob with a coarse printed thread
 or, instead of the printed knob, one M5 x 20 button-head screw + M5 nut (screw version).
 
-    python3 make_swivel.py [--rail 10] [--radius 500] [--clear 0] [--tilt 15] [--case 0]
+    python3 make_swivel.py [--rail 10] [--radius 500] [--clear 0] [--tilt 15] [--case 4 | --case-dims W H T]
 
 --radius is the radius of the FRONT (seat-side, concave) face of the backrest in mm. Measure it:
 lay a straight edge across the front face over 200 mm and measure the gap s at the middle:
@@ -23,7 +23,7 @@ import os
 import numpy as np
 from manifold3d import CrossSection, Manifold
 
-from make_holder import HERE, PHONE_H, PHONE_T, _cradle, box, render, to_numpy, write_stl
+from make_holder import HERE, PHONE_H, PHONE_T, PHONE_W, _cradle, box, render, to_numpy, write_stl
 
 # ---- toughness-driven dimensions (mm) -------------------------------------------------------
 T_A, T_B, T_TOP, LEG = 5.0, 5.0, 6.0, 40.0   # user-side leg, back leg, bridge, leg length
@@ -127,9 +127,10 @@ def make_knob():
 
 
 # ---- the whole thing ---------------------------------------------------------------------------
-def build_swivel(rail_t=10.0, tilt=15.0, clear=0.0, case_extra=0.0, radius=500.0, fastener="printed"):
+def build_swivel(rail_t=10.0, tilt=15.0, clear=0.0, case_extra=4.0, radius=500.0, fastener="printed", margin=4.0):
     printed = fastener == "printed"
-    ph_z = PHONE_H + case_extra
+    ex = tuple(case_extra) if isinstance(case_extra, (tuple, list)) else (case_extra,) * 3
+    ph_z = PHONE_H + ex[1]
     ledge_h = 8.0
     zc_pre = ledge_h + ph_z / 2
     cradle, c = _cradle(False, case_extra, 0.0, None, wall_len=48.0, lip_len=34.0, bar=8.0, t_p=T_P,
@@ -172,7 +173,7 @@ def build_swivel(rail_t=10.0, tilt=15.0, clear=0.0, case_extra=0.0, radius=500.0
         return cradle.rotate([0, -beta, 0])
 
     min_z = min(at(swung(b), 0.0).bounding_box()[2] for b in range(0, 91, 5))
-    z_o = clear - min_z
+    z_o = clear + margin - min_z      # lowest point of the sweep = `clear` + `margin` above the rail top
 
     top_patch = at(box(-STRUT_W / 2, STRUT_W / 2, 4.5, 13.0, -22, -12), z_o)
     bot_patch = box(-STRUT_W / 2, STRUT_W / 2, slot / 2 - 9, slot / 2 + 9, T_TOP - 1.0, T_TOP)
@@ -183,7 +184,7 @@ def build_swivel(rail_t=10.0, tilt=15.0, clear=0.0, case_extra=0.0, radius=500.0
     strut = Manifold.hull_points(pts)
     clip = clamp + strut + at(head, z_o)
 
-    phone_local = box(-c["ph_x"] / 2, c["ph_x"] / 2, -T_P - PHONE_T, -T_P, c["z_l"] - zc, c["z_l"] - zc + ph_z)
+    phone_local = box(-c["ph_x"] / 2, c["ph_x"] / 2, -T_P - (c["ph_t"] - 0.8), -T_P, c["z_l"] - zc, c["z_l"] - zc + ph_z)
     knob = make_knob() if printed else None
     meta = dict(c=c, z_o=z_o, y_o=y_o, tilt=tilt, slot=slot, at=lambda m: at(m, z_o), swung=swung,
                 phone_local=phone_local, zc=zc, radius=radius, rail_t=rail_t, printed=printed, clamp=clamp)
@@ -200,8 +201,8 @@ def check(clip, cradle, knob, meta):
     rail = rail_ghost(t, R)
     solid = clip + rail
     res = {}
-    for beta in (0, 45, 90):
-        res[f"tray collides @{beta}deg (mm3)"] = round((at(swung(beta)) ^ solid).volume(), 3)
+    res["tray vs clip/backrest, worst of 0..90 deg in 5 deg steps (mm3)"] = round(
+        max((at(swung(b)) ^ solid).volume() for b in range(0, 91, 5)), 3)
     res["peg stops turn past 0 deg (mm3, expect >0)"] = round((at(swung(-6)) ^ clip).volume(), 3)
     res["peg stops turn past 90 deg (mm3, expect >0)"] = round((at(swung(96)) ^ clip).volume(), 3)
     phone = at(meta["phone_local"].rotate([0, -90, 0]))
@@ -252,8 +253,13 @@ def main():
                     help="radius of the backrest's front (concave) face in mm; 0 = flat (see the docstring to measure it)")
     ap.add_argument("--clear", type=float, default=0.0, help="lowest point of the turning tray above the rail top (>= 0)")
     ap.add_argument("--tilt", type=float, default=15.0)
-    ap.add_argument("--case", type=float, default=0.0)
+    ap.add_argument("--case", type=float, default=4.0,
+                    help="extra mm for a phone case, added to width, height and thickness (0 = bare phone)")
+    ap.add_argument("--case-dims", type=float, nargs=3, metavar=("W", "H", "T"),
+                    help="measured size of phone + case in mm (width height thickness); overrides --case")
     a = ap.parse_args()
+    if a.case_dims:
+        a.case = (a.case_dims[0] - PHONE_W, a.case_dims[1] - PHONE_H, a.case_dims[2] - PHONE_T)
 
     os.makedirs(os.path.join(HERE, "stl"), exist_ok=True)
     stl = lambda n: os.path.join(HERE, "stl", n)
@@ -266,8 +272,8 @@ def main():
         print(f"== {mode}")
         for k, v in report.items():
             print(f"  {k}: {v}")
-        bad = [report[f"tray collides @{b}deg (mm3)"] for b in (0, 45, 90)] + [report["phone@90 hits clip/rail (mm3)"]]
-        if any(x > 0.5 for x in bad):
+        bad = [report["tray vs clip/backrest, worst of 0..90 deg in 5 deg steps (mm3)"], report["phone@90 hits clip/rail (mm3)"]]
+        if any(x > 0.05 for x in bad):
             raise SystemExit("ERROR: the turning tray hits the clip - use a larger --clear (>= 0); nothing written")
         # print orientation: clip on its side, flat on the clamp's end face; cradle back-down; knob back-down
         write_stl(clip.rotate([0, 0, ang / 2]), stl(f"v3_clip_{mode}_print.stl"), rot=(0, 90, 0))

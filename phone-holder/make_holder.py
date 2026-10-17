@@ -37,14 +37,16 @@ def _cradle(landscape, case_extra, gap, z2, wall_len=None, lip_len=None, bar=0.0
     unless None: then the ledge bottom is placed at z = 0.
     wall_len / lip_len: walls / lips only this tall above the ledge (None = full height).
     bar: extend the plate this far above the pocket to close the camera window.
+    case_extra: mm added to the phone size for a case: one number, or (width, height, thickness).
     t_p: back plate thickness. left_full: the -X wall and its lips run the full pocket height.
     win_bottom: lower edge of the camera window (default: 12 mm above the ledge).
     wall / lip_t / lip_o / ledge_h: wall thickness, lip thickness, lip overlap on the screen, ledge height.
     """
     fit = 1.0                    # total side play for the phone
-    ph_x = (PHONE_H if landscape else PHONE_W) + case_extra   # phone extent along X
-    ph_z = (PHONE_W if landscape else PHONE_H) + case_extra   # phone extent along Z
-    ph_t = PHONE_T + 0.8 + case_extra
+    cw, ch, ct = tuple(case_extra) if isinstance(case_extra, (tuple, list)) else (case_extra,) * 3
+    ph_x = (PHONE_H + ch) if landscape else (PHONE_W + cw)    # phone (+ case) extent along X
+    ph_z = (PHONE_W + cw) if landscape else (PHONE_H + ch)    # phone (+ case) extent along Z
+    ph_t = PHONE_T + 0.8 + ct
     Pw = ph_x + fit              # pocket width
     margin = 6.0                 # frame left around the camera window
     Wc = Pw + 2 * wall
