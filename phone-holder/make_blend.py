@@ -18,6 +18,7 @@ import bpy
 from mathutils import Vector
 
 from make_holder import box, build_perch, phone_ghost, to_numpy
+from make_swivel import build_swivel
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -50,6 +51,7 @@ def main():
     ap.add_argument("--case", type=float, default=0.0)
     ap.add_argument("--tilt", type=float, default=15.0)
     ap.add_argument("--rise", type=float, default=0.0)
+    ap.add_argument("--clear", type=float, default=0.0, help="swivel: lowest point of the turning tray above the rail top")
     ap.add_argument("--render", action="store_true", help="also write images/blender_preview.png (needs EGL/GPU libs)")
     a = ap.parse_args()
 
@@ -81,13 +83,45 @@ def main():
         rv, rf = to_numpy(box(-170, 170, 0, a.rail, -110, 0))
         mesh_object(f"Rail_{orient}", rv + [dx, 0, 0], rf, fit, m_rail)
 
+    # ---- v3 swivel: clip is static, the cradle + phone hang under an empty you can rotate ----
+    clip, cradle, sm = build_swivel(a.rail, a.tilt, a.clear, a.case)
+    dx = 520.0
+    cv, cf = to_numpy(clip)
+    mesh_object("Swivel_clip", cv + [dx, 0, 0], cf, holders, m_holder)
+    tilt_frame = bpy.data.objects.new("Swivel_tilt_frame", None)
+    tilt_frame.empty_display_type = "ARROWS"
+    tilt_frame.empty_display_size = 40
+    tilt_frame.location = (dx, sm["y_o"], sm["z_o"])
+    tilt_frame.rotation_euler = (-math.radians(a.tilt), 0, 0)
+    holders.objects.link(tilt_frame)
+    turn = bpy.data.objects.new("Swivel_turn (rotate local Y)", None)
+    turn.empty_display_type = "CIRCLE"
+    turn.empty_display_size = 60
+    turn.parent = tilt_frame
+    holders.objects.link(turn)
+    kv, kf = to_numpy(cradle)
+    ob = mesh_object("Swivel_cradle", kv, kf, holders, m_holder)
+    ob.parent = turn
+    pv, pf = to_numpy(sm["phone_local"])
+    ob = mesh_object("Swivel_phone", pv, pf, fit, m_phone)
+    ob.parent = turn
+    rv, rf = to_numpy(box(-170, 170, 0, a.rail, -110, 0))
+    mesh_object("Swivel_rail", rv + [dx, 0, 0], rf, fit, m_rail)
+    # turn portrait -> landscape (counter-clockwise from the front) over 50 frames
+    turn.rotation_euler = (0, 0, 0)
+    turn.keyframe_insert("rotation_euler", frame=1)
+    turn.rotation_euler = (0, -math.pi / 2, 0)
+    turn.keyframe_insert("rotation_euler", frame=50)
+    turn.rotation_euler = (0, 0, 0)
+    scene.frame_start, scene.frame_end = 1, 50
+
     # camera + Workbench preview settings
     cam_data = bpy.data.cameras.new("Cam")
     cam_data.type = "ORTHO"
-    cam_data.ortho_scale = 560
+    cam_data.ortho_scale = 980
     cam = bpy.data.objects.new("Cam", cam_data)
     scene.collection.objects.link(cam)
-    target = Vector((130, 0, -85))
+    target = Vector((260, 0, 0))
     cam.location = target + Vector((330, -520, 230))
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
     scene.camera = cam

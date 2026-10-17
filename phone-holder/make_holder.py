@@ -29,13 +29,16 @@ def box(x0, x1, y0, y1, z0, z1):
     return Manifold.cube([x1 - x0, y1 - y0, z1 - z0]).translate([x0, y0, z0])
 
 
-def _cradle(landscape, case_extra, gap, z2, wall_len=None, lip_len=None, bar=0.0):
+def _cradle(landscape, case_extra, gap, z2, wall_len=None, lip_len=None, bar=0.0,
+            t_p=4.0, left_full=False, win_bottom=None):
     """Phone pocket: back plate (with camera window), ledge, side walls and lips.
 
     Phone side is -Y, plate back face at y = -gap. z2 = top of the phone pocket,
     unless None: then the ledge bottom is placed at z = 0.
     wall_len / lip_len: walls / lips only this tall above the ledge (None = full height).
     bar: extend the plate this far above the pocket to close the camera window.
+    t_p: back plate thickness. left_full: the -X wall and its lips run the full pocket height.
+    win_bottom: lower edge of the camera window (default: 12 mm above the ledge).
     """
     fit = 1.0                    # total side play for the phone
     ph_x = (PHONE_H if landscape else PHONE_W) + case_extra   # phone extent along X
@@ -44,7 +47,6 @@ def _cradle(landscape, case_extra, gap, z2, wall_len=None, lip_len=None, bar=0.0
     Pw = ph_x + fit              # pocket width
     wall, lip_t, lip_o = 3.0, 2.0, 2.2
     ledge_h = 6.0
-    t_p = 4.0                    # cradle back plate
     margin = 6.0                 # frame left around the camera window
     Wc = Pw + 2 * wall
 
@@ -60,13 +62,14 @@ def _cradle(landscape, case_extra, gap, z2, wall_len=None, lip_len=None, bar=0.0
 
     cradle = box(-Wc / 2, Wc / 2, y_plate_front, -gap, z_bot, z2 + bar)     # back plate
     cradle -= box(-(Pw / 2 - margin), Pw / 2 - margin, y_plate_front - 1, -gap + 1,
-                  z_l + 12, z2 + (0.0 if bar else 0.01))                      # camera window
+                  z_l + 12 if win_bottom is None else win_bottom, z2 + (0.0 if bar else 0.01))                      # camera window
     cradle += box(-Wc / 2, Wc / 2, y_f, y_plate_front + 0.01, z_bot, z_l)    # ledge
     for s in (-1, 1):
         xi, xo = s * Pw / 2, s * (Pw / 2 + wall)
         xl = s * (Pw / 2 - lip_o)
-        cradle += box(min(xi, xo), max(xi, xo), y_out, y_plate_front + 0.01, z_bot, z_wall)  # side wall
-        cradle += box(min(xl, xi), max(xl, xi), y_out, y_f + 0.01, z_bot, z_lip)             # lip
+        full = left_full and s == -1
+        cradle += box(min(xi, xo), max(xi, xo), y_out, y_plate_front + 0.01, z_bot, z2 if full else z_wall)  # side wall
+        cradle += box(min(xl, xi), max(xl, xi), y_out, y_f + 0.01, z_bot, z2 if full else z_lip)             # lip
 
     if landscape:
         # phone is turned 90 deg CCW: buttons point up (open), USB-C faces +X.
@@ -194,9 +197,11 @@ def to_numpy(m):
     return v, f
 
 
-def write_stl(m, path, print_orientation=True):
+def write_stl(m, path, print_orientation=True, rot=None):
     """Binary STL. print_orientation: lay the part on its side (X up) so the hook needs no supports."""
-    if print_orientation:
+    if rot is not None:
+        m = m.rotate(list(rot))
+    elif print_orientation:
         m = m.rotate([0, 90, 0])
     bb = m.bounding_box()
     m = m.translate([-(bb[0] + bb[3]) / 2, -(bb[1] + bb[4]) / 2, -bb[2]])
