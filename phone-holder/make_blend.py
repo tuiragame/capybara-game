@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Build phone-holder/s23ultra_holder.blend (and a preview render) with Blender's bpy module.
+"""Build phone-holder/s23ultra_holder.blend (v3 swivel, tough edition) with Blender's bpy module.
 
     pip install bpy manifold3d numpy
-    python3 make_blend.py [--rail 10] [--case 0]
+    python3 make_blend.py [--rail 10] [--radius 500] [--case 0] [--clear 0] [--fastener printed|screw]
 
-Scene units are millimetres (1 Blender unit = 1 mm). Each variant holds:
-  Holder_*   the printable "top-perch" mesh as it sits on the chair (rail top = Z 0, user/laptop on the -Y side)
-  Phone_*    ghost S23 Ultra, to check the fit
-  Rail_*     ghost backrest slab of the thickness you passed in
-The ghost objects live in the "Fit check" collection - hide it before exporting STL.
+Scene units are millimetres (1 Blender unit = 1 mm).
+  Swivel_clip      printable clip (rail top = Z 0, user / laptop on the -Y side)
+  Swivel_cradle    printable tray, parented to the empty "Swivel_turn" - press SPACE to play 0 -> 90 deg
+  Swivel_knob      printed knob (only in the printed-fastener version)
+  Phone / Backrest ghosts in the "Fit check" collection (curved backrest) - hide before exporting STL
 """
 import argparse
 import math
@@ -17,8 +17,8 @@ import os
 import bpy
 from mathutils import Vector
 
-from make_holder import box, build_perch, phone_ghost, to_numpy
-from make_swivel import build_swivel
+from make_holder import to_numpy
+from make_swivel import build_swivel, rail_ghost
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -48,10 +48,11 @@ def material(name, rgba, alpha=1.0):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rail", type=float, default=10.0)
+    ap.add_argument("--radius", type=float, default=500.0)
     ap.add_argument("--case", type=float, default=0.0)
+    ap.add_argument("--clear", type=float, default=0.0)
     ap.add_argument("--tilt", type=float, default=15.0)
-    ap.add_argument("--rise", type=float, default=0.0)
-    ap.add_argument("--clear", type=float, default=0.0, help="swivel: lowest point of the turning tray above the rail top")
+    ap.add_argument("--fastener", choices=("printed", "screw"), default="printed")
     ap.add_argument("--render", action="store_true", help="also write images/blender_preview.png (needs EGL/GPU libs)")
     a = ap.parse_args()
 
@@ -60,38 +61,24 @@ def main():
     scene.unit_settings.system = "METRIC"
     scene.unit_settings.scale_length = 0.001
     scene.unit_settings.length_unit = "MILLIMETERS"
-
-    holders = bpy.data.collections.new("Holders")
+    holders = bpy.data.collections.new("Holder")
     fit = bpy.data.collections.new("Fit check")
     scene.collection.children.link(holders)
     scene.collection.children.link(fit)
 
     m_holder = material("PETG", (0.95, 0.55, 0.15))
+    m_knob = material("Knob", (0.2, 0.55, 0.9))
     m_phone = material("Phone ghost", (0.08, 0.08, 0.10), 0.55)
     m_rail = material("Walnut ghost", (0.28, 0.15, 0.08), 0.75)
 
-    for i, orient in enumerate(("portrait", "landscape")):
-        part, meta = build_perch(a.rail, orient, a.tilt, a.rise, a.case)
-        v, f = to_numpy(part)
-        dx = i * 260.0
-        v = v + [dx, 0, 0]
-        mesh_object(f"Holder_{orient}", v, f, holders, m_holder)
+    clip, cradle, knob, sm = build_swivel(a.rail, a.tilt, a.clear, a.case, a.radius, a.fastener)
+    v, f = to_numpy(clip)
+    mesh_object("Swivel_clip", v, f, holders, m_holder)
 
-        pv, pf = to_numpy(phone_ghost(meta))
-        mesh_object(f"Phone_{orient}", pv + [dx, 0, 0], pf, fit, m_phone)
-
-        rv, rf = to_numpy(box(-170, 170, 0, a.rail, -110, 0))
-        mesh_object(f"Rail_{orient}", rv + [dx, 0, 0], rf, fit, m_rail)
-
-    # ---- v3 swivel: clip is static, the cradle + phone hang under an empty you can rotate ----
-    clip, cradle, sm = build_swivel(a.rail, a.tilt, a.clear, a.case)
-    dx = 520.0
-    cv, cf = to_numpy(clip)
-    mesh_object("Swivel_clip", cv + [dx, 0, 0], cf, holders, m_holder)
     tilt_frame = bpy.data.objects.new("Swivel_tilt_frame", None)
     tilt_frame.empty_display_type = "ARROWS"
     tilt_frame.empty_display_size = 40
-    tilt_frame.location = (dx, sm["y_o"], sm["z_o"])
+    tilt_frame.location = (0, sm["y_o"], sm["z_o"])
     tilt_frame.rotation_euler = (-math.radians(a.tilt), 0, 0)
     holders.objects.link(tilt_frame)
     turn = bpy.data.objects.new("Swivel_turn (rotate local Y)", None)
@@ -99,15 +86,18 @@ def main():
     turn.empty_display_size = 60
     turn.parent = tilt_frame
     holders.objects.link(turn)
-    kv, kf = to_numpy(cradle)
-    ob = mesh_object("Swivel_cradle", kv, kf, holders, m_holder)
-    ob.parent = turn
-    pv, pf = to_numpy(sm["phone_local"])
-    ob = mesh_object("Swivel_phone", pv, pf, fit, m_phone)
-    ob.parent = turn
-    rv, rf = to_numpy(box(-170, 170, 0, a.rail, -110, 0))
-    mesh_object("Swivel_rail", rv + [dx, 0, 0], rf, fit, m_rail)
-    # turn portrait -> landscape (counter-clockwise from the front) over 50 frames
+
+    v, f = to_numpy(cradle)
+    mesh_object("Swivel_cradle", v, f, holders, m_holder).parent = turn
+    if knob is not None:
+        v, f = to_numpy(knob)
+        mesh_object("Swivel_knob", v, f, holders, m_knob).parent = turn
+    v, f = to_numpy(sm["phone_local"])
+    mesh_object("Phone", v, f, fit, m_phone).parent = turn
+    v, f = to_numpy(rail_ghost(a.rail, a.radius, 340.0))
+    mesh_object("Backrest", v, f, fit, m_rail)
+
+    # turn portrait -> landscape (counter-clockwise seen from the front) over 50 frames
     turn.rotation_euler = (0, 0, 0)
     turn.keyframe_insert("rotation_euler", frame=1)
     turn.rotation_euler = (0, -math.pi / 2, 0)
@@ -118,19 +108,17 @@ def main():
     # camera + Workbench preview settings
     cam_data = bpy.data.cameras.new("Cam")
     cam_data.type = "ORTHO"
-    cam_data.ortho_scale = 980
+    cam_data.ortho_scale = 420
     cam = bpy.data.objects.new("Cam", cam_data)
     scene.collection.objects.link(cam)
-    target = Vector((260, 0, 0))
+    target = Vector((0, 0, 60))
     cam.location = target + Vector((330, -520, 230))
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
     scene.camera = cam
-
     scene.render.engine = "BLENDER_WORKBENCH"
     scene.display.shading.light = "STUDIO"
     scene.display.shading.color_type = "MATERIAL"
     scene.render.resolution_x, scene.render.resolution_y = 1600, 900
-    scene.render.film_transparent = False
     scene.world = bpy.data.worlds.new("W")
     scene.world.color = (0.93, 0.93, 0.95)
     scene.render.filepath = os.path.join(HERE, "images", "blender_preview.png")

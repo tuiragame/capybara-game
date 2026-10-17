@@ -30,7 +30,7 @@ def box(x0, x1, y0, y1, z0, z1):
 
 
 def _cradle(landscape, case_extra, gap, z2, wall_len=None, lip_len=None, bar=0.0,
-            t_p=4.0, left_full=False, win_bottom=None):
+            t_p=4.0, left_full=False, win_bottom=None, wall=3.0, lip_t=2.0, lip_o=2.2, ledge_h=6.0):
     """Phone pocket: back plate (with camera window), ledge, side walls and lips.
 
     Phone side is -Y, plate back face at y = -gap. z2 = top of the phone pocket,
@@ -39,14 +39,13 @@ def _cradle(landscape, case_extra, gap, z2, wall_len=None, lip_len=None, bar=0.0
     bar: extend the plate this far above the pocket to close the camera window.
     t_p: back plate thickness. left_full: the -X wall and its lips run the full pocket height.
     win_bottom: lower edge of the camera window (default: 12 mm above the ledge).
+    wall / lip_t / lip_o / ledge_h: wall thickness, lip thickness, lip overlap on the screen, ledge height.
     """
     fit = 1.0                    # total side play for the phone
     ph_x = (PHONE_H if landscape else PHONE_W) + case_extra   # phone extent along X
     ph_z = (PHONE_W if landscape else PHONE_H) + case_extra   # phone extent along Z
     ph_t = PHONE_T + 0.8 + case_extra
     Pw = ph_x + fit              # pocket width
-    wall, lip_t, lip_o = 3.0, 2.0, 2.2
-    ledge_h = 6.0
     margin = 6.0                 # frame left around the camera window
     Wc = Pw + 2 * wall
 
@@ -190,18 +189,6 @@ def build_perch(rail_t=10.0, orientation="portrait", tilt=15.0, rise=0.0, case_e
     return part, meta
 
 
-def fit_test(rail_t=10.0):
-    """Just the clamp (30 mm wide): print this first to check the fit on the real backrest."""
-    slot = rail_t + 1.6
-    t_a, t_b, t_top, leg_len, pad_depth = 4.0, 3.5, 5.0, 36.0, 0.8
-    m = box(-15, 15, -t_a, slot + t_b, 0, t_top)
-    m += box(-15, 15, -t_a, 0, -leg_len, t_top)
-    m += box(-15, 15, slot, slot + t_b, -leg_len, t_top)
-    m -= box(-10, 10, slot - 0.01, slot + pad_depth, -leg_len + 7, -7)
-    m -= box(-10, 10, -pad_depth, 0.01, -leg_len + 7, -7)
-    return m
-
-
 def to_numpy(m):
     mesh = m.to_mesh()
     v = np.asarray(mesh.vert_properties)[:, :3].astype(float)
@@ -308,8 +295,6 @@ if __name__ == "__main__":
         write_stl(part, os.path.join(HERE, "stl", f"s23ultra_holder_{orient}_print.stl"))
         render(part, os.path.join(HERE, "images", f"{orient}.png"),
                [(18, -35), (18, 145), (0, -90)], f"S23 Ultra holder - {orient} (as hung; phone side = -Y)")
-
-    write_stl(fit_test(a.rail), os.path.join(HERE, "stl", "clamp_fit_test_print.stl"), rot=(0, 90, 0))
 
     # v2: phone on top of the backrest, nothing over the seat
     for orient in ("portrait", "landscape"):
