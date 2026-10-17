@@ -34,7 +34,7 @@ HEAD_R, HEAD_Y0, HEAD_Y1 = 30.0, 0.3, 10.0    # round head (front face at y=0.3,
 PSI_P = 20.0                                  # polar angle of the stop peg
 PEG_R, PEG_ORBIT, GROOVE_D = 3.5, 24.0, 3.0   # stop peg radius / orbit radius / groove depth
 KNOB_R, KNOB_T = 16.0, 4.0
-THREAD = dict(r=7.0, e=1.0, pitch=4.0, clr=0.7)   # twisted eccentric-circle thread: 6..8 mm radius, 4 mm pitch
+THREAD = dict(r=7.0, e=1.0, pitch=4.0, clr=0.4)   # twisted eccentric-circle thread: 6..8 mm radius, 4 mm pitch
 PLANK_SHIFT = 0.8                             # plank sits mid-slot: 0.8 mm play front and back
 
 
