@@ -93,3 +93,4 @@ python3 make_blend.py  --rail 10 --radius 500
   - 使用者耗材一度是 PLA Glow，已改 PETG Translucent。PLA 不適合（會變形）。
 - 使用者已設：支撐啟用、通常（自動）、ビルドプレートのみ。建議再設牆 4 圈、填充 25%。
 - 使用者正在測試，之後會回報；尚未有實體列印結果。
+- 使用者回報「尺寸有點小，可能要 0.7 左右」（推測是螺紋間隙 `THREAD["clr"]` 0.4→0.7，未確認是哪個零件）。已改為 0.7 並重新產生 `v3_knob_print.stl`、`test_printed_thread_print.stl`；`holder_PETG_plate.3mf` 內的旋鈕仍是舊的 0.4 版。
