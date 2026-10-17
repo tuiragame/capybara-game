@@ -5,7 +5,7 @@
     python3 make_blend.py [--rail 18] [--case 0]
 
 Scene units are millimetres (1 Blender unit = 1 mm). Each variant holds:
-  Holder_*   the printable mesh, as it hangs on the chair (rail top = Z 0, phone side = -Y)
+  Holder_*   the printable "top-perch" mesh as it sits on the chair (rail top = Z 0, user/laptop on the -Y side)
   Phone_*    ghost S23 Ultra, to check the fit
   Rail_*     ghost backrest slab of the thickness you passed in
 The ghost objects live in the "Fit check" collection - hide it before exporting STL.
@@ -17,7 +17,7 @@ import os
 import bpy
 from mathutils import Vector
 
-from make_holder import PHONE_H, PHONE_T, PHONE_W, box, build, to_numpy
+from make_holder import box, build_perch, phone_ghost, to_numpy
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -48,6 +48,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rail", type=float, default=18.0)
     ap.add_argument("--case", type=float, default=0.0)
+    ap.add_argument("--tilt", type=float, default=15.0)
+    ap.add_argument("--rise", type=float, default=0.0)
     ap.add_argument("--render", action="store_true", help="also write images/blender_preview.png (needs EGL/GPU libs)")
     a = ap.parse_args()
 
@@ -67,16 +69,13 @@ def main():
     m_rail = material("Walnut ghost", (0.28, 0.15, 0.08), 0.75)
 
     for i, orient in enumerate(("portrait", "landscape")):
-        part, meta = build(a.rail, orient, None, a.case)
+        part, meta = build_perch(a.rail, orient, a.tilt, a.rise, a.case)
         v, f = to_numpy(part)
         dx = i * 260.0
         v = v + [dx, 0, 0]
         mesh_object(f"Holder_{orient}", v, f, holders, m_holder)
 
-        ph = meta
-        pv = box(-ph["ph_x"] / 2, ph["ph_x"] / 2, ph["y_f"], ph["y_f"] + PHONE_T,
-                 ph["z_l"], ph["z_l"] + ph["ph_z"])
-        pv, pf = to_numpy(pv)
+        pv, pf = to_numpy(phone_ghost(meta))
         mesh_object(f"Phone_{orient}", pv + [dx, 0, 0], pf, fit, m_phone)
 
         rv, rf = to_numpy(box(-170, 170, 0, a.rail, -110, 0))
