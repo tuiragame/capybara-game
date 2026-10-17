@@ -7,6 +7,7 @@
 |---|---|---|
 | **v3 旋轉版** | 手機可在直向 ⇄ 橫向之間轉 90°，需要螺絲 | `stl/s23ultra_swivel_clip_print.stl` + `stl/s23ultra_swivel_cradle_print.stl` |
 | **v2 固定版** | 一體成型、不用螺絲，直向與橫向各一個檔 | `stl/s23ultra_perch_portrait_print.stl`／`stl/s23ultra_perch_landscape_print.stl` |
+| 試套件 | 只有夾子，先確認厚度合不合 | `stl/clamp_fit_test_print.stl` |
 | v1 | 掛在椅背前面，會擋到座面，僅供參考 | `stl/s23ultra_holder_*_print.stl` |
 
 `s23ultra_holder.blend` 是 Blender 檔（單位 mm），內含 v2 與 v3，另有半透明手機與椅背可檢查配合。
@@ -57,7 +58,8 @@
 
 ## 先量兩個尺寸
 
-1. **椅背上緣厚度**（預設按 18 mm 估的，請用游標卡尺量）。
+1. **椅背上緣厚度**：你說約 1 公分，所以預設改成 **10 mm**（槽寬 11.6 mm）。「左右」可能差 1–2 mm，請用游標卡尺量準，再用 `--rail 實測值` 重新產生。
+   **建議先印 `stl/clamp_fit_test_print.stl`**（只有 30 mm 寬的夾子，約 10 分鐘）套在椅背上試鬆緊，再印大件。
 2. （選填）電腦螢幕上緣離椅背上緣多遠，確認托盤前方的空間夠。
 
 ```bash

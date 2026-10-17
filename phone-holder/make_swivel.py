@@ -10,7 +10,7 @@ leave them. A stop peg limits the turn to 0 .. 90 deg counter-clockwise (portrai
 In landscape the left wall of the tray (full length) carries the phone and the ledge ends up on
 the right, so the USB-C notch faces the cable side.
 
-    python3 make_swivel.py [--rail 18] [--clear 0] [--tilt 15] [--case 0]
+    python3 make_swivel.py [--rail 10] [--clear 0] [--tilt 15] [--case 0]
 
 Same coordinates as make_holder.py: Z = 0 is the rail top, the user / laptop is on the -Y side.
 """
@@ -46,7 +46,7 @@ def sector_y(r0, r1, a0, a1, y0, y1, n=48):
     return m.translate([0, y0, 0])
 
 
-def build_swivel(rail_t=18.0, tilt=15.0, clear=0.0, case_extra=0.0, hw=60.0, strut_w=30.0):
+def build_swivel(rail_t=10.0, tilt=15.0, clear=0.0, case_extra=0.0, hw=60.0, strut_w=30.0):
     slot = rail_t + 1.6
     t_a, t_b, t_top, leg_len, pad_depth = 4.0, 3.5, 5.0, 36.0, 0.8
 
@@ -133,7 +133,7 @@ def check(clip, cradle, meta, rail_t):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--rail", type=float, default=18.0, help="backrest thickness in mm (measure it!)")
+    ap.add_argument("--rail", type=float, default=10.0, help="backrest thickness in mm (measure it!)")
     ap.add_argument("--clear", type=float, default=0.0,
                     help="lowest point the turning tray reaches, in mm above the rail top (keep >= 0, lower values hit the clip)")
     ap.add_argument("--tilt", type=float, default=15.0)

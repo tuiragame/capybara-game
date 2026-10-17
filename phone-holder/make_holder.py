@@ -88,7 +88,7 @@ def _cradle(landscape, case_extra, gap, z2, wall_len=None, lip_len=None, bar=0.0
                         Pw=Pw, Wc=Wc, ph_x=ph_x, ph_z=ph_z, ph_t=ph_t, z_bot=z_bot, t_p=t_p)
 
 
-def build(rail_t=18.0, orientation="portrait", gap=None, case_extra=0.0, hook_w=None):
+def build(rail_t=10.0, orientation="portrait", gap=None, case_extra=0.0, hook_w=None):
     landscape = orientation == "landscape"
 
     # ---- hook (goes over the top of the backrest) -------------------------
@@ -137,7 +137,7 @@ def build(rail_t=18.0, orientation="portrait", gap=None, case_extra=0.0, hook_w=
     return part, meta
 
 
-def build_perch(rail_t=18.0, orientation="portrait", tilt=15.0, rise=0.0, case_extra=0.0, hook_w=None):
+def build_perch(rail_t=10.0, orientation="portrait", tilt=15.0, rise=0.0, case_extra=0.0, hook_w=None):
     """v2: the phone stands ON TOP of the backrest, leaning back, so nothing sticks out over the seat.
 
     Same coordinates as build(): Z = 0 is the rail top, the user / laptop is on the -Y side,
@@ -188,6 +188,18 @@ def build_perch(rail_t=18.0, orientation="portrait", tilt=15.0, rise=0.0, case_e
     meta = dict(slot=slot, y_f=0, ph_x=c["ph_x"], ph_z=c["ph_z"], ph_t=c["ph_t"], z_l=c["z_l"],
                 c=c, place=place, tilt=tilt, y_p=y_p, z_p=z_p, hw=hw, landscape=landscape)
     return part, meta
+
+
+def fit_test(rail_t=10.0):
+    """Just the clamp (30 mm wide): print this first to check the fit on the real backrest."""
+    slot = rail_t + 1.6
+    t_a, t_b, t_top, leg_len, pad_depth = 4.0, 3.5, 5.0, 36.0, 0.8
+    m = box(-15, 15, -t_a, slot + t_b, 0, t_top)
+    m += box(-15, 15, -t_a, 0, -leg_len, t_top)
+    m += box(-15, 15, slot, slot + t_b, -leg_len, t_top)
+    m -= box(-10, 10, slot - 0.01, slot + pad_depth, -leg_len + 7, -7)
+    m -= box(-10, 10, -pad_depth, 0.01, -leg_len + 7, -7)
+    return m
 
 
 def to_numpy(m):
@@ -281,7 +293,7 @@ def check(m, meta, rail_t):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--rail", type=float, default=18.0, help="backrest thickness in mm (measure it!)")
+    ap.add_argument("--rail", type=float, default=10.0, help="backrest thickness in mm (measure it!)")
     ap.add_argument("--case", type=float, default=0.0, help="extra mm for a phone case")
     ap.add_argument("--gap", type=float, default=None, help="v1 only: stand-off between backrest and cradle")
     ap.add_argument("--tilt", type=float, default=15.0, help="v2: lean-back angle of the phone in degrees")
@@ -296,6 +308,8 @@ if __name__ == "__main__":
         write_stl(part, os.path.join(HERE, "stl", f"s23ultra_holder_{orient}_print.stl"))
         render(part, os.path.join(HERE, "images", f"{orient}.png"),
                [(18, -35), (18, 145), (0, -90)], f"S23 Ultra holder - {orient} (as hung; phone side = -Y)")
+
+    write_stl(fit_test(a.rail), os.path.join(HERE, "stl", "clamp_fit_test_print.stl"), rot=(0, 90, 0))
 
     # v2: phone on top of the backrest, nothing over the seat
     for orient in ("portrait", "landscape"):

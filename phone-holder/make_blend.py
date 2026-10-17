@@ -2,7 +2,7 @@
 """Build phone-holder/s23ultra_holder.blend (and a preview render) with Blender's bpy module.
 
     pip install bpy manifold3d numpy
-    python3 make_blend.py [--rail 18] [--case 0]
+    python3 make_blend.py [--rail 10] [--case 0]
 
 Scene units are millimetres (1 Blender unit = 1 mm). Each variant holds:
   Holder_*   the printable "top-perch" mesh as it sits on the chair (rail top = Z 0, user/laptop on the -Y side)
@@ -47,7 +47,7 @@ def material(name, rgba, alpha=1.0):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--rail", type=float, default=18.0)
+    ap.add_argument("--rail", type=float, default=10.0)
     ap.add_argument("--case", type=float, default=0.0)
     ap.add_argument("--tilt", type=float, default=15.0)
     ap.add_argument("--rise", type=float, default=0.0)
