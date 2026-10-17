@@ -44,3 +44,12 @@ python3 make_holder.py --rail 16.5 --case 3   # 如果手机带壳，再加 case
 
 Galaxy S23 Ultra：163.4 × 78.1 × 8.9 mm（三星官方规格）。摄像头在背面，背板开了大窗口避让。
 电源/音量键窗口的位置是按常见位置估的（距顶部 25–105 mm），如果不对可改 `make_holder.py` 里的 `top_off` 和 `btn_len`。
+
+## Blender
+
+`s23ultra_holder.blend` を Blender（4.x / 5.x）で開くだけで使えます。単位は mm（1 BU = 1 mm）。
+
+- `Holders` コレクション：印刷用メッシュ（竖屏 / 横屏）。椅子に掛けた向き（背もたれ上端が Z=0、スマホ側が −Y）。
+- `Fit check` コレクション：半透明の S23 Ultra と背もたれの板。フィット確認用なので、STL を書き出す前に非表示にしてください。
+- 椅子の厚さ・ケース有無を変えて作り直す：`pip install bpy manifold3d numpy` → `python3 make_blend.py --rail 16.5 --case 3`
+- メッシュはブーリアン適用済み（パラメトリックではない）です。寸法を変えるなら上のコマンドで再生成するのが確実で、Blender 内では Sculpt / Edit Mode で微調整できます。
