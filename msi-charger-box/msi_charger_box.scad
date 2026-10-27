@@ -65,8 +65,8 @@ module box() {
             nx = floor((in_L-20)/(sl+sg));
             ny = floor((in_W-10)/(slot_w+rib));
             for (ix=[0:nx-1], iy=[0:ny-1])
-                translate([(ix-(nx-1)/2)*(sl+sg), (iy-(ny-1)/2)*(slot_w+rib), -0.1])
-                    cube([sl, slot_w, base_t+0.2], center=false);
+                translate([(ix-(nx-1)/2)*(sl+sg), (iy-(ny-1)/2)*(slot_w+rib), base_t/2])
+                    cube([sl, slot_w, base_t+0.2], center=true);
 
             // ---- 兩長邊側牆直槽 ----
             ns = floor((in_L-30)/(slot_w+rib));
