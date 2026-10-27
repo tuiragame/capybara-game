@@ -1,14 +1,16 @@
 // MSI A23-400P1A (400W, 20V/20A) 充電器散熱架 / vented stand-box
 // 參數式設計：先量你自己那顆的實際尺寸，改下面三個數字就好。
-// Render: openscad -o box.stl -D 'part="box"' msi_charger_box.scad
-//         openscad -o lid.stl -D 'part="lid"' msi_charger_box.scad
+// Render: openscad -o box.3mf -D 'part="box"' msi_charger_box.scad
+//         openscad -o lid.3mf -D 'part="lid"' msi_charger_box.scad
 
 part = "both";            // "box" | "lid" | "both" | "assembly"
 
-// ---- 變壓器實測尺寸 (mm) —— 請用游標卡尺量過再改 ----
-ad_L = 200;               // 長 (不含兩端電線護套)
-ad_W = 95;                // 寬
-ad_H = 42;                // 厚
+// ---- 變壓器尺寸 (mm) ----
+// 來源：ChargerLab 對 A23-400P1A 的拆解實測 188.09 x 88.17 x 33.20，
+// 這裡各進位並留一點公差。你手上那顆若不同，量過後改這三個數字即可。
+ad_L = 189;               // 長 (不含兩端電線護套)
+ad_W = 89;                // 寬
+ad_H = 34;                // 厚
 
 // ---- 設計參數 ----
 clr      = 3;             // 四周間隙 (每邊)
@@ -102,7 +104,7 @@ module box() {
 }
 
 // 列印方向：翻過來，平面朝下、凸緣朝上
-module print_lid() { translate([0,0,3]) rotate([180,0,0]) translate([0,0,-4]) lid(); }
+module print_lid() { rotate([180,0,0]) translate([0,0,-4]) lid(); }
 
 module lid() {
     lt = 4;

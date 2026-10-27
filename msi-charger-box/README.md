@@ -15,25 +15,38 @@
 | 兩短邊 | U 型缺口讓 DC / AC 電線從上方放入，旁邊再各開直槽 |
 | 蓋子 | 長條散熱孔 (可選)，只是擋灰塵和碰觸；夏天或長時間滿載建議不要蓋 |
 
-## 尺寸 —— 請先量你自己的
-照片上看不到實際尺寸，`msi_charger_box.scad` 裡的預設值是用照片比例**估的**：
+## 尺寸
+變壓器尺寸取自 ChargerLab 對 A23-400P1A 的拆解實測：
+**188.09 × 88.17 × 33.20 mm** (長 × 寬 × 厚，不含電線護套)。
+設計值各進位並留公差：
 
 ```
-ad_L = 200   // 長
-ad_W = 95    // 寬
-ad_H = 42    // 厚
+ad_L = 189   // 長
+ad_W = 89    // 寬
+ad_H = 34    // 厚
 ```
-用游標卡尺量變壓器本體 (不含電線護套)，改這三個數字即可，其餘自動計算。
-外型約 212 × 107 × 80mm (含腳)，列印床需 ≥ 220mm，或斜放。
+這是網路上的資料，不是量你手上那顆的結果。拿游標卡尺量過，若有出入就改 `msi_charger_box.scad` 開頭三個數字，其餘自動計算。
+
+盒子外形約 201 × 101 × 68mm (含腳)；蓋子 201 × 101 × 7mm。
+
+## 檔案
+| 檔案 | 用途 |
+|---|---|
+| `plate.3mf` | 盒身 + 蓋子排在同一個板上，一次切片 (需要 ≥ 220mm 的 Y 軸，如 Bambu 256mm 床) |
+| `box.3mf` / `lid.3mf` | 盒身、蓋子各自一個檔 |
+| `box.stl` / `lid.stl` / `plate.stl` | 同上的 STL 版本 |
+| `msi_charger_box.scad` | 參數式原始檔 |
 
 ## 列印
-- 材料：**PETG 或 ABS/ASA** (PLA 約 55–60°C 就會軟化，不建議；變壓器表面可能有 50–60°C)
+- 材料：**PETG 或 ABS/ASA** (PLA 約 55–60°C 就會軟化，不建議)
 - 層高 0.2mm、牆 3 圈、填充 20%，不需要支撐
-- `box.stl`：盒身 (以腳朝下列印)　`lid.stl`：蓋子 (已翻面，平面朝下)
-- 重新輸出 STL：
+- 盒身以腳朝下列印；蓋子已翻面，平面朝下
+- 3MF 只含幾何，沒有切片設定，材料與參數請在切片軟體內設定
+- 重新輸出：
   ```
-  openscad -o box.stl -D 'part="box"' msi_charger_box.scad
-  openscad -o lid.stl -D 'part="lid"' msi_charger_box.scad
+  openscad -o box.3mf   -D 'part="box"'  msi_charger_box.scad
+  openscad -o lid.3mf   -D 'part="lid"'  msi_charger_box.scad
+  openscad -o plate.3mf -D 'part="both"' msi_charger_box.scad
   ```
 
 ## 使用注意
