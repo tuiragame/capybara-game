@@ -46,7 +46,7 @@ SLOT_DEPTH = 40.0                   # 遥控器槽深度
 TABLET_SLOT_DEPTH = 36.0            # 平板槽深度 (槽底留 9 mm 连接前后两块)
 USB_SLOT_W = 26.0                   # U 盘槽 宽 (x), 一般 U 盘 / 接收器 <= 24
 USB_SLOT_T = 14.0                   # U 盘槽 厚 (y), 一般 U 盘 <= 12
-USB_SLOT_DEPTH = 12.0
+USB_SLOT_DEPTH = 6.0
 USB_SLOT_CX = 24.0                  # 槽中心 x (绕线塔左侧)
 
 # 绕线塔: 后排右侧的长圆形立柱, 左端圆头内是笔孔, 外面绕两条传输线, 顶部有挡边 (无盖)
@@ -61,7 +61,7 @@ PEN_DEPTH = 90.0                    # 笔孔深度 (笔长约 152)
 FIT_TEST = "--fit-test" in sys.argv
 if FIT_TEST:
     BASE_H, SLOT_DEPTH, TABLET_SLOT_DEPTH = 12.0, 8.0, 8.0
-    USB_SLOT_DEPTH, WIND_H, PEN_DEPTH = 8.0, 6.0, 18.0
+    USB_SLOT_DEPTH, WIND_H, PEN_DEPTH = 6.0, 6.0, 18.0
 
 L = BASE_L
 # y: 前 -> 后
