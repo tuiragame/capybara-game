@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """XPPen Deco Pro LW (Gen 2) 竖立收纳座 -> 3MF (Bambu Lab P1S).
 
-平板、快捷键遥控器(ACK05)、数位笔全部「竖着插」,无盖,占地约 120 x 65 mm。
+平板、快捷键遥控器(ACK05)、数位笔全部「竖着插」,无盖,占地约 120 x 66 mm。
 
     俯视图 (y 向上 = 后方)
         ┌──────────────┐
@@ -45,21 +45,27 @@ BASE_L = 120.0                      # 底座长度; 平板槽两端贯通, 平�
 BASE_H = 45.0
 SLOT_DEPTH = 40.0                   # 遥控器槽深度
 TABLET_SLOT_DEPTH = 36.0            # 平板槽深度 (槽底留 9 mm 连接前后两块)
+USB_SLOT_W = 26.0                   # U 盘槽 宽 (x), 一般 U 盘 / 接收器 <= 24
+USB_SLOT_T = 14.0                   # U 盘槽 厚 (y), 一般 U 盘 <= 12
+USB_SLOT_DEPTH = 35.0
+USB_SLOT_CX = 24.0                  # 槽中心 x (笔塔左侧)
 TOWER_H = 80.0
 PEN_FLOOR = 6.0
 
 FIT_TEST = "--fit-test" in sys.argv
 if FIT_TEST:
     BASE_H, SLOT_DEPTH, TABLET_SLOT_DEPTH, TOWER_H, PEN_FLOOR = 12.0, 8.0, 8.0, 16.0, 4.0
+    USB_SLOT_DEPTH = 8.0
 
 L = BASE_L
 # y: 前 -> 后
 Y_KEYPAD0 = WALL
 Y_TABLET0 = Y_KEYPAD0 + KEYPAD_SLOT_W + WALL
 Y_TABLET1 = Y_TABLET0 + TABLET_SLOT_W
-BASE_W = Y_TABLET1 + WALL
 PEN_CY = Y_TABLET1 + WALL + PEN_HOLE_D / 2
 PEN_OD = PEN_HOLE_D + 2 * PEN_WALL
+BASE_W = PEN_CY + PEN_OD / 2 + 1.0   # 底座补满成长方形 (后排放笔塔与 U 盘槽), 笔塔后留 1 mm 避免相切
+USB_CY = (Y_TABLET1 + BASE_W) / 2
 
 
 def box(x0, y0, z0, x1, y1, z1):
@@ -81,14 +87,16 @@ def build():
     rect = CrossSection.square((L - 2 * r, BASE_W - 2 * r)).translate((r, r))
     rect = rect.offset(r, JoinType.Round, circular_segments=48)
     pen_circle = CrossSection.circle(PEN_OD / 2, 96).translate((L / 2, PEN_CY))
-    # 底座轮廓与笔塔同属一个 2D 并集, 避免 3D 布尔在 z=0 产生碎屑三角形
-    body = Manifold.extrude(rect + pen_circle, BASE_H) + Manifold.extrude(pen_circle, TOWER_H - BASE_H).translate((0, 0, BASE_H))
+    body = Manifold.extrude(rect, BASE_H) + Manifold.extrude(pen_circle, TOWER_H - BASE_H).translate((0, 0, BASE_H))
 
     # 平板槽 (两端贯通)
     body -= lead_in_slot(-LEAD_IN - 1, Y_TABLET0, L + LEAD_IN + 1, Y_TABLET1, BASE_H, TABLET_SLOT_DEPTH)
     # 遥控器槽 (左右居中)
     kx0 = (L - KEYPAD_SLOT_L) / 2
     body -= lead_in_slot(kx0, Y_KEYPAD0, kx0 + KEYPAD_SLOT_L, Y_KEYPAD0 + KEYPAD_SLOT_W, BASE_H, SLOT_DEPTH)
+    # U 盘槽 (后排, 笔塔左侧)
+    body -= lead_in_slot(USB_SLOT_CX - USB_SLOT_W / 2, USB_CY - USB_SLOT_T / 2,
+                         USB_SLOT_CX + USB_SLOT_W / 2, USB_CY + USB_SLOT_T / 2, BASE_H, USB_SLOT_DEPTH)
     # 笔孔 (带导角)
     hole = Manifold.cylinder(TOWER_H - PEN_FLOOR + 1, PEN_HOLE_D / 2, circular_segments=96)
     hole = hole.translate((L / 2, PEN_CY, PEN_FLOOR))
