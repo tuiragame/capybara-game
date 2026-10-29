@@ -37,7 +37,6 @@ KEYPAD_SLOT_W = KEYPAD_T + 4.0      # 14.0
 KEYPAD_SLOT_L = KEYPAD_H + 5.5      # 76.0
 PEN_HOLE_D = 20.0                   # 笔握持处最粗约 15~16
 WALL = 5.0
-PEN_WALL = 4.0
 LEAD_IN = 1.5                       # 槽口导角
 CORNER_R = 4.0
 
@@ -48,23 +47,35 @@ TABLET_SLOT_DEPTH = 36.0            # 平板槽深度 (槽底留 9 mm 连接前�
 USB_SLOT_W = 26.0                   # U 盘槽 宽 (x), 一般 U 盘 / 接收器 <= 24
 USB_SLOT_T = 14.0                   # U 盘槽 厚 (y), 一般 U 盘 <= 12
 USB_SLOT_DEPTH = 35.0
-USB_SLOT_CX = 24.0                  # 槽中心 x (笔塔左侧)
-TOWER_H = 80.0
-PEN_FLOOR = 6.0
+USB_SLOT_CX = 24.0                  # 槽中心 x (绕线塔左侧)
+
+# 绕线塔: 后排右侧的长圆形立柱, 左端圆头内是笔孔, 外面绕两条传输线, 顶部有挡边 (无盖)
+TOWER_X0, TOWER_X1 = 44.0, 114.0    # 塔 x 范围 (长 70)
+TOWER_W = 26.0                      # 塔宽 (y); 笔孔 Ø20 外壁 3
+CABLE_D = 4.5                       # 传输线直径 (含余量); 线绕在塔外会再多出这个厚度
+CABLE_GAP = 8.6                     # 塔前壁到平板槽后缘的距离 > CABLE_D + 余量, 线不会碰到平板
+WIND_H = 75.0                       # 绕线区高度 (约 16 圈, 两条各约 1.4 m)
+LIP = 4.0                           # 顶部挡边外扩
+PEN_DEPTH = 90.0                    # 笔孔深度 (笔长约 152)
 
 FIT_TEST = "--fit-test" in sys.argv
 if FIT_TEST:
-    BASE_H, SLOT_DEPTH, TABLET_SLOT_DEPTH, TOWER_H, PEN_FLOOR = 12.0, 8.0, 8.0, 16.0, 4.0
-    USB_SLOT_DEPTH = 8.0
+    BASE_H, SLOT_DEPTH, TABLET_SLOT_DEPTH = 12.0, 8.0, 8.0
+    USB_SLOT_DEPTH, WIND_H, PEN_DEPTH = 8.0, 6.0, 18.0
 
 L = BASE_L
 # y: 前 -> 后
 Y_KEYPAD0 = WALL
 Y_TABLET0 = Y_KEYPAD0 + KEYPAD_SLOT_W + WALL
 Y_TABLET1 = Y_TABLET0 + TABLET_SLOT_W
-PEN_CY = Y_TABLET1 + WALL + PEN_HOLE_D / 2
-PEN_OD = PEN_HOLE_D + 2 * PEN_WALL
-BASE_W = PEN_CY + PEN_OD / 2 + 1.0   # 底座补满成长方形 (后排放笔塔与 U 盘槽), 笔塔后留 1 mm 避免相切
+TOWER_Y0 = Y_TABLET1 + CABLE_GAP
+TOWER_Y1 = TOWER_Y0 + TOWER_W
+PEN_CY = TOWER_Y0 + TOWER_W / 2
+PEN_CX = TOWER_X0 + TOWER_W / 2     # 笔孔在塔的左端圆头
+LIP_H = 6.0                         # 挡边总高 (4 mm 45° 过渡 + 2 mm 平台)
+TOWER_H = BASE_H + WIND_H + LIP_H
+PEN_FLOOR = TOWER_H - PEN_DEPTH
+BASE_W = TOWER_Y1 + 1.0             # 底座补满成长方形, 塔后留 1 mm
 USB_CY = (Y_TABLET1 + BASE_W) / 2
 
 
@@ -82,26 +93,47 @@ def lead_in_slot(x0, y0, x1, y1, z_top, depth):
     return body + flare
 
 
+def stadium(x0, x1, cy, w):
+    """长圆形 (两端半圆) 截面, x 从 x0 到 x1, 宽 w, 中心线 y=cy。"""
+    c0 = CrossSection.circle(w / 2, 96).translate((x0 + w / 2, cy))
+    c1 = CrossSection.circle(w / 2, 96).translate((x1 - w / 2, cy))
+    return CrossSection.batch_hull([c0, c1])
+
+
+def tower_solid():
+    cy = PEN_CY
+    wind = Manifold.extrude(stadium(TOWER_X0, TOWER_X1, cy, TOWER_W), WIND_H).translate((0, 0, BASE_H))
+    # 挡边: 先 45° 外扩过渡再接平台 (不需要支撑)
+    ln, w = TOWER_X1 - TOWER_X0, TOWER_W
+    z0 = BASE_H + WIND_H
+    mid = ((TOWER_X0 + TOWER_X1) / 2, cy)
+    base_cs = stadium(-ln / 2, ln / 2, 0, w)
+    flare = Manifold.extrude(base_cs, LIP, scale_top=((ln + 2 * LIP) / ln, (w + 2 * LIP) / w))
+    flare = flare.translate((mid[0], mid[1], z0))
+    plate = Manifold.extrude(stadium(TOWER_X0 - LIP, TOWER_X1 + LIP, cy, w + 2 * LIP), LIP_H - LIP)
+    plate = plate.translate((0, 0, z0 + LIP))
+    return wind + flare + plate
+
+
 def build():
     r = CORNER_R
     rect = CrossSection.square((L - 2 * r, BASE_W - 2 * r)).translate((r, r))
     rect = rect.offset(r, JoinType.Round, circular_segments=48)
-    pen_circle = CrossSection.circle(PEN_OD / 2, 96).translate((L / 2, PEN_CY))
-    body = Manifold.extrude(rect, BASE_H) + Manifold.extrude(pen_circle, TOWER_H - BASE_H).translate((0, 0, BASE_H))
+    body = Manifold.extrude(rect, BASE_H) + tower_solid()
 
     # 平板槽 (两端贯通)
     body -= lead_in_slot(-LEAD_IN - 1, Y_TABLET0, L + LEAD_IN + 1, Y_TABLET1, BASE_H, TABLET_SLOT_DEPTH)
     # 遥控器槽 (左右居中)
     kx0 = (L - KEYPAD_SLOT_L) / 2
     body -= lead_in_slot(kx0, Y_KEYPAD0, kx0 + KEYPAD_SLOT_L, Y_KEYPAD0 + KEYPAD_SLOT_W, BASE_H, SLOT_DEPTH)
-    # U 盘槽 (后排, 笔塔左侧)
+    # U 盘槽 (后排, 绕线塔左侧)
     body -= lead_in_slot(USB_SLOT_CX - USB_SLOT_W / 2, USB_CY - USB_SLOT_T / 2,
                          USB_SLOT_CX + USB_SLOT_W / 2, USB_CY + USB_SLOT_T / 2, BASE_H, USB_SLOT_DEPTH)
     # 笔孔 (带导角)
     hole = Manifold.cylinder(TOWER_H - PEN_FLOOR + 1, PEN_HOLE_D / 2, circular_segments=96)
-    hole = hole.translate((L / 2, PEN_CY, PEN_FLOOR))
+    hole = hole.translate((PEN_CX, PEN_CY, PEN_FLOOR))
     cone = Manifold.cylinder(LEAD_IN, PEN_HOLE_D / 2, PEN_HOLE_D / 2 + LEAD_IN, circular_segments=96)
-    cone = cone.translate((L / 2, PEN_CY, TOWER_H - LEAD_IN))
+    cone = cone.translate((PEN_CX, PEN_CY, TOWER_H - LEAD_IN))
     body -= hole + cone
     return body
 
