@@ -36,11 +36,13 @@ CHAMFER = GROOVE                   # 顶挡边下方 45° 过渡 (不需支撑)
 FLOOR = 6.0                        # 槽底高度
 WIND_H = 60.0                      # 直段绕线区高度 (两条线约需 52, 留余量)
 SCOOP_R = 22.0                     # 两侧取放用的半圆缺口
-SCOOP_BOTTOM = 46.0
+SCOOP_BOTTOM = 47.0
 NOTCH_W = 14.0                     # 两端出线缺口宽度 (DC 线护套)
 NOTCH_BOTTOM = 34.0
-VENT_W, VENT_Z0, VENT_Z1 = 6.0, 14.0, 40.0
-VENT_X = [32.0, 46.0, 60.0]        # 散热缝中心 x (左右对称), 避开取放缺口
+VENT_W, VENT_Z0, VENT_Z1 = 14.0, 9.0, 43.0      # 前后壁散热窗 (只留 6 mm 肋条)
+VENT_X = [-60.0, -40.0, -20.0, 0.0, 20.0, 40.0, 60.0]
+FLOOR_SLOT_W = 10.0                # 槽底散热缝 (变压器只压在两侧窄肋上, 底部可进风)
+FLOOR_SLOTS = [(-66.0, -26.0), (-18.0, 18.0), (26.0, 66.0)]
 
 FIT_TEST = "--fit-test" in sys.argv
 if FIT_TEST:
@@ -80,9 +82,10 @@ def build():
             scoop = scoop.translate((0, y0, SCOOP_BOTTOM + SCOOP_R))
             body -= scoop
             # 散热缝 (只开在核心壁上, 绕线从外面盖过不影响)
-            for sx in (-1, 1):
-                for vx in VENT_X:
-                    body -= box(sx * vx - VENT_W / 2, y0, VENT_Z0, sx * vx + VENT_W / 2, y1, VENT_Z1)
+            for vx in VENT_X:
+                body -= box(vx - VENT_W / 2, y0, VENT_Z0, vx + VENT_W / 2, y1, VENT_Z1)
+        for x0, x1 in FLOOR_SLOTS:
+            body -= box(x0, -FLOOR_SLOT_W / 2, -1, x1, FLOOR_SLOT_W / 2, FLOOR + 1)
     return body
 
 
